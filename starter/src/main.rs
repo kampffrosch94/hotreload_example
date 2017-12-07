@@ -11,15 +11,40 @@ use libloading::Library;
 
 const LIB_PATH: &'static str = "../app/target/debug/libapp.so";
 
-struct Application {
+struct ApplicationWrapper {
     lib: ManuallyDrop<Library>,
     trait_object: ManuallyDrop<Box<NumberProvider>>,
     last_modified: SystemTime,
 }
 
-impl NumberProvider for Application {
-    //noinspection RsDropRef
+impl NumberProvider for ApplicationWrapper {
     fn get(&mut self) -> u32 {
+        self.reload_if_necessary();
+        self.trait_object.get()
+    }
+}
+
+impl ApplicationWrapper {
+    fn new() -> ApplicationWrapper {
+        let last_modified: SystemTime = std::fs::metadata(LIB_PATH).unwrap()
+            .modified().unwrap();
+        let lib = Library::new(LIB_PATH)
+            .unwrap();
+        let trait_object = unsafe {
+            let f = lib.get::<fn() -> Box<NumberProvider>>(
+                b"get_message\0"
+            ).unwrap();
+            f()
+        };
+        ApplicationWrapper {
+            lib: ManuallyDrop::new(lib),
+            trait_object: ManuallyDrop::new(trait_object),
+            last_modified,
+        }
+    }
+
+    //noinspection RsDropRef
+    fn reload_if_necessary(&mut self){
         let t = Instant::now();
         if let Ok(Ok(modified)) = std::fs::metadata(LIB_PATH)
             .map(|m| m.modified())
@@ -45,31 +70,10 @@ impl NumberProvider for Application {
             }
         let dur = t.elapsed();
         println!("Ms for check: {}", dur.subsec_nanos() as f64 / 1_000_000.0);
-        self.trait_object.get()
     }
 }
 
-impl Application {
-    fn new() -> Application {
-        let last_modified: SystemTime = std::fs::metadata(LIB_PATH).unwrap()
-            .modified().unwrap();
-        let lib = Library::new(LIB_PATH)
-            .unwrap();
-        let trait_object = unsafe {
-            let f = lib.get::<fn() -> Box<NumberProvider>>(
-                b"get_message\0"
-            ).unwrap();
-            f()
-        };
-        Application {
-            lib: ManuallyDrop::new(lib),
-            trait_object: ManuallyDrop::new(trait_object),
-            last_modified,
-        }
-    }
-}
-
-impl Drop for Application {
+impl Drop for ApplicationWrapper {
     //noinspection RsDropRef
     fn drop(&mut self) {
         println!("Dropping the Library");
@@ -81,7 +85,7 @@ impl Drop for Application {
 }
 
 fn main() {
-    let mut app = Application::new();
+    let mut app = ApplicationWrapper::new();
 
     let dur = std::time::Duration::from_secs(1);
     loop {

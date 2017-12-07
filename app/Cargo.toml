@@ -1,0 +1,10 @@
+[package]
+name = "app"
+version = "0.1.0"
+authors = ["kampffrosch94 <johanneskarl.dev@gmail.com>"]
+
+[dependencies]
+[dependencies.base]
+path = "../base"
+[lib]
+crate-type = ["dylib"]

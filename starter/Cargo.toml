@@ -1,0 +1,11 @@
+[package]
+name = "starter"
+version = "0.1.0"
+authors = ["kampffrosch94 <johanneskarl.dev@gmail.com>"]
+
+[dependencies]
+libloading = "*"
+[dependencies.app]
+path = "../app"
+[dependencies.base]
+path = "../base"

@@ -1,10 +1,10 @@
 extern crate base;
 use base::NumberProvider;
 struct MyProvider;
-const nr: u32 = 105;
+const NR: u32 = 140;
 impl NumberProvider for MyProvider {
-    fn get(&self) -> u32 {
-        nr
+    fn get(&mut self) -> u32 {
+        NR
     }
 }
 #[no_mangle]

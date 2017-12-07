@@ -1,3 +1,3 @@
 pub trait NumberProvider {
-    fn get(&self) -> u32;
+    fn get(&mut self) -> u32;
 }
